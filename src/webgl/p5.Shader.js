@@ -39,6 +39,7 @@ class Shader {
     this.attributes = {};
     this._loadedUniforms = false;
     this.uniforms = {};
+    this._userSetUniforms = new Set();
     this._bound = false;
     this.samplers = [];
     this.hooks = {
@@ -1101,6 +1102,10 @@ class Shader {
     const uniform = this.uniforms[uniformName];
     if (!uniform) {
       return;
+    }
+
+    if (!this._isInternalSetUniform) {
+      this._userSetUniforms.add(uniformName);
     }
 
     // In p5.strands-related code, where some of the code may be in

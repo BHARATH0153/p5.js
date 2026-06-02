@@ -729,6 +729,14 @@ export class Renderer3D extends Renderer {
 
     //Clear depth every frame
     this._resetBuffersBeforeDraw();
+
+    // Clear user-set uniform tracking for the new frame
+    if (this.states.userFillShader) {
+      this.states.userFillShader._userSetUniforms?.clear();
+    }
+    if (this.states.userImageShader) {
+      this.states.userImageShader._userSetUniforms?.clear();
+    }
   }
 
   background(...args) {
@@ -1493,6 +1501,7 @@ export class Renderer3D extends Renderer {
     }
 
     // TODO: optimize
+    fillShader._isInternalSetUniform = true;
     fillShader.setUniform("uUseVertexColor", this._useVertexColor);
     fillShader.setUniform("uMaterialColor", this.states.curFillColor);
     fillShader.setUniform("isTexture", !!this.states._tex);
@@ -1501,7 +1510,10 @@ export class Renderer3D extends Renderer {
     // the next time a shader is used. However, the texture() function
     // works differently and is global p5 state. If the p5 state has
     // been cleared, we also need to clear the value in uSampler to match.
-    fillShader.setUniform("uSampler", this.states._tex || empty);
+    // Don't override uSampler if the user has already set it via setUniform.
+    if (!fillShader._userSetUniforms.has('uSampler')) {
+      fillShader.setUniform("uSampler", this.states._tex || empty);
+    }
     fillShader.setUniform(
       "uTint",
       this.states.tint?._getRGBA([255, 255, 255, 255]) ?? [255, 255, 255, 255]
@@ -1594,6 +1606,7 @@ export class Renderer3D extends Renderer {
       "uQuadraticAttenuation",
       this.states.quadraticAttenuation
     );
+    fillShader._isInternalSetUniform = false;
   }
 
   // getting called from _setFillUniforms
